@@ -19,6 +19,12 @@ export class MainScene extends Phaser.Scene {
     this.load.tilemapTiledJSON("common-map", "../assets/common-map.json");
     this.load.image("ground", "../assets/ground.png");
     this.load.image("ground2", "../assets/ground2.png");
+
+    this.load.json("map1","../assets/isometric-grass-and-water.json")
+    this.load.spritesheet("tiles", "../assets/isometric-grass-and-water.png", {frameWidth: 64, frameHeight: 64})
+
+    this.load.tilemapTiledJSON("map2", "../assets/isometric-grass-and-water.json")
+    this.load.image("grass-tiles", "../assets/isometric-grass-and-water.png")
   }
 
   create(): void {
@@ -34,17 +40,73 @@ export class MainScene extends Phaser.Scene {
   }
 
   private initMap() {
-    this._map = this.add.tilemap("blank-map");
-    const ground = this._map.addTilesetImage("ground", "ground");
-    this._currentLayer = this._map.createLayer("ground-layer", [ground]);
+    // this._map = this.add.tilemap("blank-map");
+    // const ground = this._map.addTilesetImage("ground", "ground");
+    // this._currentLayer = this._map.createLayer("ground-layer", [ground]);
+    this._map = this.add.tilemap("map2");
+    const grass_and_water = this._map.addTilesetImage("isometric_grass_and_water", "grass-tiles");
+    this._currentLayer = this._map.createLayer("Tile Layer 1", [grass_and_water]);
 
-    // this._map = this.add.tilemap("common-map");
-    // const ground2 = this._map.addTilesetImage("ground2", "ground2");
-    // this._currentLayer = this._map.createLayer("ground-layer", [ground2]);
+
+    // const show = this.add.graphics();
+    // this._currentLayer.renderDebug(show);
+  }
+
+  private initMap1() {
+    // this._map = this.add.tilemap("blank-map");
+    // const ground = this._map.addTilesetImage("ground", "ground");
+    // this._currentLayer = this._map.createLayer("ground-layer", [ground]);
+
+    // this._map = this.add.tilemap("map1");
+    // const grass_and_water = this._map.addTilesetImage("isometric_grass_and_water", "grass-and-water");
+    // this._currentLayer = this._map.createLayer("Tile Layer 1", [grass_and_water]);
+
+    const data = this.cache.json.get('map1');
+    console.log('data: ', data);
+
+    const tilewidth = data.tilewidth;
+    const tileheight = data.tileheight;
+
+    const tileWidthHalf = tilewidth / 2;
+    const tileHeightHalf = tileheight / 2;
+
+    const layer = data.layers[0].data;
+
+    const mapwidth = data.layers[0].width;
+    const mapheight = data.layers[0].height;
+
+    // const offsetX = mapwidth * tileWidthHalf;
+    const offsetX = 0;
+    const offsetY = 16;
+
+    let i = 0;
+
+    const tile = this.add.image(0, 0 + offsetY, 'tiles', 23)
+    tile.setOrigin(0.5, 0.5)
+
+    // for (let y = 0; y < mapheight; y++)
+    // {
+    //     for (let x = 0; x < mapwidth; x++)
+    //     {
+    //         const id = layer[i] - 1;
+
+    //         const tx = (x - y) * tileWidthHalf;
+    //         const ty = (x + y) * tileHeightHalf;
+
+    //         console.log("tx, ty: ", tx, ty)
+
+    //         const tile = this.add.image(tx, ty, 'tiles', id);
+    //         // const tile = this.add.image(centerX + tx, centerY + ty, 'tiles', id);
+
+    //         // tile.depth = centerY + ty;
+
+    //         i++;
+    //     }
+    // }
 
     if (GameConfig.debug) {
-      const show = this.add.graphics();
-      this._currentLayer.renderDebug(show);
+      // const show = this.add.graphics();
+      // this._currentLayer.renderDebug(show);
 
       const graphics = this.add.graphics({
         x: 0,
@@ -69,6 +131,15 @@ export class MainScene extends Phaser.Scene {
   }
 
   private initGridLayer() {
+
+    const data = this.cache.json.get('map1');
+    console.log('data: ', data);
+
+    // const tilewidth = data.tilewidth;
+    // const tileheight = data.tileheight;
+    // const rows = data.width;
+    // const cols = data.heigth
+
     this._gridLayer = new GridLayer(this);
 
     const { rows, cols, tileWidth, tileHeight } = GameConfig;
