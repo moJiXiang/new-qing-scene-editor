@@ -58,12 +58,6 @@ export class MapPosition {
     }
   }
 
-  getOffsetPoint(): ScreenPoint {
-    return new ScreenPoint(
-      (this.tileX - this.tileY) * this.TILE_WIDTH_HALF,
-      (this.tileX + this.tileY) * this.TILE_HEIGHT_HALF
-    );
-  }
 
   getScreenPoint(): ScreenPoint {
     return new ScreenPoint(
@@ -90,13 +84,13 @@ export class GridLayer extends Phaser.GameObjects.Graphics {
     for (let tileX = 0; tileX <= rows; tileX++) {
       const mapFrom = new MapPosition(tileX, 0, tileWidth, tileHeight);
       const mapTo = new MapPosition(tileX, cols, tileWidth, tileHeight);
-      this.drawLine(mapFrom.getOffsetPoint(), mapTo.getOffsetPoint());
+      this.drawLine(mapFrom.getScreenPoint(), mapTo.getScreenPoint());
     }
 
     for (let tileY = 0; tileY <= cols; tileY++) {
       const mapFrom = new MapPosition(0, tileY, tileWidth, tileHeight);
       const mapTo = new MapPosition(rows, tileY, tileWidth, tileHeight);
-      this.drawLine(mapFrom.getOffsetPoint(), mapTo.getOffsetPoint());
+      this.drawLine(mapFrom.getScreenPoint(), mapTo.getScreenPoint());
     }
   }
 

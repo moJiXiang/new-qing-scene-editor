@@ -11,9 +11,7 @@
     "webpack-cli": "4.5.0",
     "webpack-dev-server": "3.11.2"
   },
-  "dependencies": {
-    "phaser": "^3.54.0"
-  },
+  "dependencies": {},
   "scripts": {
     "dev": "webpack --mode development && webpack serve --mode development"
   },
