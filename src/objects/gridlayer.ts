@@ -65,6 +65,21 @@ export class MapPosition {
       (this.tileX + this.tileY) * this.TILE_HEIGHT_HALF
     );
   }
+
+  getPoint4Positions() {
+    const top = new ScreenPoint( 
+      (this.tileX - this.tileY) * this.TILE_WIDTH_HALF,
+      (this.tileX + this.tileY) * this.TILE_HEIGHT_HALF
+    )
+
+    const right = new ScreenPoint(top.x + this.TILE_WIDTH_HALF, top.y + this.TILE_HEIGHT_HALF)
+    const bottom = new ScreenPoint(top.x, top.y + this.tileHeight)
+    const left = new ScreenPoint(top.x - this.TILE_WIDTH_HALF, top.y + this.TILE_HEIGHT_HALF)
+
+    return {
+      top, right, bottom, left
+    }
+  }
 }
 
 export class GridLayer extends Phaser.GameObjects.Graphics {

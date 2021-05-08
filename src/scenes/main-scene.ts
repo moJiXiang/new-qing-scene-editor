@@ -1,23 +1,26 @@
-import { GameConfig } from "../config";
+import { MainSceneConfig, SceneConfig } from "../config";
+import { Circle } from "../objects/circle";
 import { GridLayer, MapPosition, ScreenPoint } from "../objects/gridlayer";
 import { PaintBrush } from "../objects/paintbrush";
 import { Redhat } from "../objects/redhat";
 
 export class MainScene extends Phaser.Scene {
-  private _map: Phaser.Tilemaps.Tilemap;
-  private _currentLayer: Phaser.Tilemaps.TilemapLayer;
-  private _gridLayer: GridLayer;
-  private _paintBrush: PaintBrush;
-  private _controls: Phaser.Cameras.Controls.SmoothedKeyControl;
+  protected sceneConfig: SceneConfig; // 场景配置
+  private _map: Phaser.Tilemaps.Tilemap; // 初始化地图
+  private _currentLayer: Phaser.Tilemaps.TilemapLayer; // 当前图层
+  private _gridLayer: GridLayer; // 线框层
+  private _paintBrush: PaintBrush; // 画笔
+  private _controls: Phaser.Cameras.Controls.SmoothedKeyControl; // 键盘控制
 
-  private frames: string[];
-  private texture = "grounds"
+  private frames: string[]; // texture frames
+  private blankMapName = "blank-map";
+  private tilesetName = "ground";
   private frameName = "ground1.png";
-  private sourceTileX = 0;
-  private sourceTileY = 0;
+  private brushSprite: Phaser.GameObjects.Sprite; // 自定义画笔Sprite
 
-  private sourceWorldX = 0;
-  private sourceWorldY = 0;
+  // private destinationMarker: Phaser.GameObjects.Graphics;
+
+  private startTile: Phaser.Tilemaps.Tile;
 
   constructor() {
     super({ key: "MainScene" });
@@ -25,144 +28,48 @@ export class MainScene extends Phaser.Scene {
 
   preload(): void {
     this.load.tilemapTiledJSON("blank-map", "../assets/blank-map.json");
-    this.load.tilemapTiledJSON("common-map", "../assets/common-map.json");
-    this.load.image("ground", "../assets/ground.png");
-    this.load.atlas("grounds", "../assets/ground.png", "../assets/ground.json");
-
-    this.load.image("ground2", "../assets/ground2.png");
-
-    this.load.json("map1", "../assets/isometric-grass-and-water.json");
-    this.load.spritesheet("tiles", "../assets/isometric-grass-and-water.png", {
-      frameWidth: 64,
-      frameHeight: 64,
-    });
-
-    this.load.tilemapTiledJSON(
-      "map2",
-      "../assets/isometric-grass-and-water.json"
-    );
-    this.load.image("grass-tiles", "../assets/isometric-grass-and-water.png");
+    this.load.atlas("ground", "../assets/ground.png", "../assets/ground.json");
   }
 
   create(): void {
+    console.log(">> main scene create");
+    this.sceneConfig = <SceneConfig>this.scene.settings.data;
+    // 禁用鼠标右键默认事件
     this.input.mouse.disableContextMenu();
-    this.initMap();
+    // 初始化地图
+    this.initMapData();
+    // 初始化线框层
     this.initGridLayer();
+    // 将camera位置调整到map中心
+    this.centerCamera();
+    // 初始化 tileset 笔刷信息
     this.initFrames();
+    // this.initTileSelector();
+    // 初始化画笔工具
     this.initPaintBrush();
+    // 绑定监听事件
     this.addListener();
+    // 初始化键盘控制
     this.initKeyboardControl();
-    // this.createTileSelector()
+
+    this.scene.launch("TilesetScene");
   }
 
   update(time: number, delta: number) {
     this._controls.update(delta);
   }
 
-  private initMap() {
-    this._map = this.add.tilemap("blank-map");
+  private initMapData() {
+    this._map = this.add.tilemap(this.blankMapName);
+
     const ground = this._map.addTilesetImage("ground", "ground");
     this._currentLayer = this._map.createLayer("ground-layer", [ground]);
-    // this._map = this.add.tilemap("map2");
-    // const grass_and_water = this._map.addTilesetImage(
-    //   "isometric_grass_and_water",
-    //   "grass-tiles"
-    // );
-    // this._currentLayer = this._map.createLayer("Tile Layer 1", [
-    //   grass_and_water,
-    // ]);
-
-    // const show = this.add.graphics();
-    // this._currentLayer.renderDebug(show);
-  }
-
-  private initMap1() {
-    // this._map = this.add.tilemap("blank-map");
-    // const ground = this._map.addTilesetImage("ground", "ground");
-    // this._currentLayer = this._map.createLayer("ground-layer", [ground]);
-
-    // this._map = this.add.tilemap("map1");
-    // const grass_and_water = this._map.addTilesetImage("isometric_grass_and_water", "grass-and-water");
-    // this._currentLayer = this._map.createLayer("Tile Layer 1", [grass_and_water]);
-
-    const data = this.cache.json.get("map1");
-    console.log("data: ", data);
-
-    const tilewidth = data.tilewidth;
-    const tileheight = data.tileheight;
-
-    const tileWidthHalf = tilewidth / 2;
-    const tileHeightHalf = tileheight / 2;
-
-    const layer = data.layers[0].data;
-
-    const mapwidth = data.layers[0].width;
-    const mapheight = data.layers[0].height;
-
-    // const offsetX = mapwidth * tileWidthHalf;
-    const offsetX = 0;
-    const offsetY = 16;
-
-    let i = 0;
-
-    const tile = this.add.image(0, 0 + offsetY, "tiles", 23);
-    tile.setOrigin(0.5, 0.5);
-
-    // for (let y = 0; y < mapheight; y++)
-    // {
-    //     for (let x = 0; x < mapwidth; x++)
-    //     {
-    //         const id = layer[i] - 1;
-
-    //         const tx = (x - y) * tileWidthHalf;
-    //         const ty = (x + y) * tileHeightHalf;
-
-    //         console.log("tx, ty: ", tx, ty)
-
-    //         const tile = this.add.image(tx, ty, 'tiles', id);
-    //         // const tile = this.add.image(centerX + tx, centerY + ty, 'tiles', id);
-
-    //         // tile.depth = centerY + ty;
-
-    //         i++;
-    //     }
-    // }
-
-    if (GameConfig.debug) {
-      // const show = this.add.graphics();
-      // this._currentLayer.renderDebug(show);
-
-      const graphics = this.add.graphics({
-        x: 0,
-        y: 0,
-      });
-
-      graphics.lineStyle(2, 0xffffff);
-
-      graphics.beginPath();
-      graphics.arc(
-        0,
-        0,
-        2,
-        Phaser.Math.DegToRad(0),
-        Phaser.Math.DegToRad(360),
-        false,
-        0.02
-      );
-      graphics.strokePath();
-      graphics.closePath();
-    }
   }
 
   private initGridLayer() {
     this._gridLayer = new GridLayer(this);
 
-    const { rows, cols, tileWidth, tileHeight } = GameConfig;
-    console.log(
-      "🚀 ~ file: main-scene.ts ~ line 161 ~ MainScene ~ initGridLayer ~ rows, cols,",
-      rows,
-      cols
-    );
+    const { rows, cols, tileWidth, tileHeight } = this.sceneConfig;
 
     this._gridLayer.draw({
       rows,
@@ -172,12 +79,17 @@ export class MainScene extends Phaser.Scene {
     });
   }
 
+  private centerCamera() {
+    const width = Number(this.game.config.width);
+    const height = Number(this.game.config.height);
+
+    this.cameras.main.scrollX = -width / 2;
+    this.cameras.main.scrollY =
+      -(height - this.sceneConfig.tileHeight * this.sceneConfig.cols) / 2;
+  }
+
   private initFrames() {
-    const atlasTexture = this.textures.get("grounds");
-    console.log(
-      "🚀 ~ file: main-scene.ts ~ line 230 ~ MainScene ~ onPointerDown ~ atlasTexture",
-      atlasTexture
-    );
+    const atlasTexture = this.textures.get("ground");
 
     const frames = atlasTexture.getFrameNames();
     this.frames = frames;
@@ -186,18 +98,12 @@ export class MainScene extends Phaser.Scene {
   private initPaintBrush() {
     this._paintBrush = new PaintBrush(
       this,
-      GameConfig.tileWidth,
-      GameConfig.tileHeight,
-      "grounds",
+      this.sceneConfig.tileWidth,
+      this.sceneConfig.tileHeight,
+      this.tilesetName,
       this.frameName
     );
-
-    // show sprite width frameKey
   }
-
-  // private changePaintBrush(frameKey: string) {
-  //   this._paintBrush.setBrush("grounds", frameKey);
-  // }
 
   private initKeyboardControl() {
     const cursors = this.input.keyboard.createCursorKeys();
@@ -218,16 +124,16 @@ export class MainScene extends Phaser.Scene {
     );
   }
 
-  private createTileSelector() {
-    const tileSelector = this.add.group();
+  // private initTileSelector() {
+  //   const tileSelector = this.add.group();
 
-    const tileSelectorBackground = this.add.graphics();
+  //   const tileSelectorBackground = this.add.graphics();
 
-    tileSelector.add(tileSelectorBackground);
+  //   tileSelector.add(tileSelectorBackground);
 
-    const tileStrip = tileSelector.create(1, 1, "ground");
-    tileStrip.inputEnabled = true;
-  }
+  //   const tileStrip = tileSelector.create(1, 1, "ground");
+  //   tileStrip.inputEnabled = true;
+  // }
 
   private addListener() {
     this.input.on("pointermove", this.onPointerMove, this);
@@ -242,66 +148,99 @@ export class MainScene extends Phaser.Scene {
 
     if (tile === null) return;
 
-    const mapPos = new MapPosition(
+    const pos = new MapPosition(
       tile.x,
       tile.y,
-      GameConfig.tileWidth,
-      GameConfig.tileHeight
+      this.sceneConfig.tileWidth,
+      this.sceneConfig.tileHeight
     );
 
-    this._paintBrush.update(
-      mapPos.getScreenPoint().x,
-      mapPos.getScreenPoint().y
-    );
+    this._paintBrush.update(pos.getScreenPoint().x, pos.getScreenPoint().y);
 
     if (pointer.leftButtonDown()) {
-      const index = this.frames.indexOf(this.frameName);
+      if (this.frameName) {
+        const index = this.frames.indexOf(this.frameName);
 
-      if (index >= 0) {
-        this._currentLayer.putTileAt(index + 1, tile.x, tile.y);
+        if (index >= 0) {
+          this._currentLayer.putTileAt(index + 1, tile.x, tile.y);
+        }
       }
+
+      if (this._paintBrush.spriteContainer.getAll().length > 0) {
+        this.fillTiles(
+          tile.x,
+          tile.y,
+          this._paintBrush.width,
+          this._paintBrush.height
+        );
+      }
+    }
+
+    // 按住鼠标右键拖动，创建选择区域，更改brush container size
+    if (pointer.rightButtonDown()) {
+      this._paintBrush.toggleTakingBrush(true);
+      this._paintBrush.updateBrushContainerSize(this.startTile, tile);
     }
   }
 
   private onPointerDown(pointer: Phaser.Input.Pointer) {
     const { worldX, worldY } = pointer;
     const tile = this._currentLayer.getTileAtWorldXY(worldX, worldY, true);
-
     if (tile === null) return;
 
-    // 绘制矩形框，选择包含的tiles
-    this.sourceTileX = tile.x;
-    this.sourceTileY = tile.y;
-
-    if (pointer.rightButtonDown()) {
-      if (tile.index < 0) {
-        // this._paintBrush.changeBrush(this.texture, "")
-        this.frameName = "";
-        this._paintBrush.hide()
-        return
-      }
-      // 单机右键选中当前tile的画笔
-      this.frameName = this.frames[tile.index - 1];
-      this._paintBrush.changeBrush(this.texture, this.frames[tile.index - 1]);
-
-      const worldPoint = new MapPosition(
+    if (
+      this._paintBrush.spriteContainer.getAll().length > 0 &&
+      pointer.leftButtonDown()
+    ) {
+      this.fillTiles(
         tile.x,
         tile.y,
-        GameConfig.tileWidth,
-        GameConfig.tileHeight
-      ).getScreenPoint();
+        this._paintBrush.width,
+        this._paintBrush.height
+      );
+    }
 
-      this.sourceWorldX = worldPoint.x;
-      this.sourceWorldY = worldPoint.y;
+    if (pointer.rightButtonDown()) {
+      // 开始创建选择区域，记录初始点
+      this.startTile = tile;
+      this._paintBrush.toggleTakingBrush(true);
+      this._paintBrush.destroySpriteContainer();
+      this._paintBrush.updateBrushContainerSize(tile, tile);
+
+      if (tile.index < 0) {
+        this.frameName = "";
+        this._paintBrush.hide();
+      } else {
+        // 单机右键选中当前tile的画笔
+        this.frameName = this.frames[tile.index - 1];
+        this._paintBrush.changeBrush(
+          this.tilesetName,
+          this.frames[tile.index - 1]
+        );
+      }
     } else {
       const index = this.frames.indexOf(this.frameName);
       if (index >= 0) {
         this._currentLayer.putTileAt(index + 1, tile.x, tile.y);
       }
-      // this._currentLayer.putTilesAt([
-      //   [1, 1],
-      //   [1, 1]
-      // ], tile.x, tile.y)
+    }
+  }
+
+  private fillTiles(
+    startTileX: number,
+    startTileY: number,
+    width: number,
+    height: number
+  ) {
+    for (let i = 0; i < width; i++) {
+      for (let j = 0; j < height; j++) {
+        const mapTileX = startTileX + i;
+        const mapTileY = startTileY + j;
+        const idx = this._paintBrush.brushTilesArray[i][j];
+        if (idx > 0) {
+          this._currentLayer.putTileAt(idx, mapTileX, mapTileY);
+        }
+      }
     }
   }
 
@@ -312,50 +251,96 @@ export class MainScene extends Phaser.Scene {
 
     if (tile === null) return;
 
-    const destWorldPoint = new MapPosition(
-      tile.x,
-      tile.y,
-      GameConfig.tileWidth,
-      GameConfig.tileHeight
-    ).getScreenPoint();
+    if (pointer.rightButtonReleased()) {
+      this._paintBrush.toggleTakingBrush(false);
 
-    // create destination marker
-    const destinationMarker = this.add.graphics({
-      lineStyle: { width: 5, color: 0x000000, alpha: 1 },
-    });
-    // destinationMarker.strokeRect(this.sourceWorldX, this.sourceWorldY, )
+      const mapPos = new MapPosition(
+        tile.x,
+        tile.y,
+        this.sceneConfig.tileWidth,
+        this.sceneConfig.tileHeight
+      );
 
-    const width = tile.x - this.sourceTileX;
-    const height = tile.y - this.sourceTileY;
-    // this._currentLayer.copy(
-    //   this.sourceTileX,
-    //   this.sourceTileY,
-    //   width,
-    //   height,
-    //   tile.x,
-    //   tile.y
-    // );
+      const positioins = mapPos.getPoint4Positions();
 
-    // 右键拖拽创建自定义地块画笔
-    // if (pointer.rightButtonReleased()) {
-    //   this.drawQuad()
-    // }
+      // 标记鼠标释放时的tile坐标
+      // new Circle(this).draw(positioins.top.x, positioins.top.y);
+
+      this._paintBrush.update(positioins.top.x, positioins.top.y);
+
+      // generate sprite from tilemap
+      const tiles = this.getTiles(this.startTile, tile);
+      const sprites = this.tileAreaToSprites(tiles, {}, this._currentLayer);
+      // sprites.forEach((sprite, i) => {
+      //   sprite.setOrigin(0, 0);
+      // });
+      this._paintBrush.setCustomBrush(sprites);
+
+      // make sure sprite follow the brush
+
+      // record the source tiles
+      this._paintBrush.setBrushTilesArray(
+        tiles,
+        this._paintBrush.width,
+        this._paintBrush.height
+      );
+    }
   }
 
-  private markTiles() {}
-
-  private drawQuad(
-    p1: ScreenPoint,
-    p2: ScreenPoint,
-    p3: ScreenPoint,
-    p4: ScreenPoint
+  private getTiles(
+    startTile: Phaser.Tilemaps.Tile,
+    endTile: Phaser.Tilemaps.Tile
   ) {
-    const quad = this.add.graphics();
+    const startX = startTile.x;
+    const startY = startTile.y;
+    const endX = endTile.x;
+    const endY = endTile.y;
 
-    quad.lineStyle(1, 0x000000);
-    quad.moveTo(p1.x, p1.y);
-    quad.lineTo(p2.x, p2.y);
-    quad.lineTo(p3.x, p3.y);
-    quad.lineTo(p4.x, p4.y);
+    let tiles = [];
+
+    for (let i = startX; i <= endX; i++) {
+      for (let j = startY; j <= endY; j++) {
+        tiles.push(this._currentLayer.getTileAt(i, j));
+      }
+    }
+
+    return tiles;
+  }
+
+  private tileAreaToSprites(
+    tiles: Phaser.Tilemaps.Tile[],
+    spriteConfig: any = {},
+    layer: Phaser.Tilemaps.TilemapLayer
+  ) {
+    if (this.brushSprite) {
+      this.brushSprite.destroy();
+    }
+    let tilemapLayer = layer;
+    let scene = tilemapLayer.scene;
+
+    // const indexes = tiles.map((tile) => tile && tile.index);
+
+    // return layer.createFromTiles(indexes, indexes, spriteConfig);
+
+    let sprites = [];
+    const offsetX = this.startTile.pixelX;
+    const offsetY = this.startTile.pixelY;
+
+    for (let i = 0; i < tiles.length; i++) {
+      const tile = tiles[i];
+
+      if (tile && tile.index !== -1) {
+        spriteConfig.x = tile.pixelX - offsetX;
+        spriteConfig.y = tile.pixelY - offsetY + tile.height / 2;
+
+        spriteConfig.key = this.tilesetName;
+        spriteConfig.frame = this.frames[tile.index - 1];
+
+        this.brushSprite = scene.make.sprite(spriteConfig);
+        sprites.push(this.brushSprite);
+      }
+    }
+
+    return sprites;
   }
 }
